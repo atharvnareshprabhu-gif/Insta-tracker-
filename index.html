@@ -318,20 +318,8 @@
       }
 
       .input-prefix {
-        position: relative;
-      }
-
-      .input-prefix span {
-        position: absolute;
-        top: 50%;
-        left: 13px;
-        color: #aaa6c2;
-        font-size: 12px;
-        transform: translateY(-50%);
-      }
-
-      .input-prefix input {
-        padding-left: 29px;
+        display: flex;
+        gap: 8px;
       }
 
       .field-hint {
@@ -638,7 +626,7 @@
         display: grid;
         place-items: center;
         border: 1px solid #524879;
-        border-radius: 9px;
+        border-radius: 99px;
         background: linear-gradient(145deg, #3b345d, #282638);
         color: #d4caff;
         font-size: 10px;
@@ -1078,7 +1066,13 @@
               </div>
               <div class="field full">
                 <label for="baseRate">Your baseline rate per sponsored post <span class="optional">· optional</span></label>
-                <div class="input-prefix"><span aria-hidden="true">$</span><input id="baseRate" name="baseRate" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 650" /></div>
+                <div class="input-prefix">
+                  <select id="currencySelect" style="width: 85px; min-height: 43px;">
+                    <option value="₹" selected>₹ (INR)</option>
+                    <option value="$">$ (USD)</option>
+                  </select>
+                  <input id="baseRate" name="baseRate" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 5000" />
+                </div>
                 <div class="field-hint">Your starting point. The selected niche multiplier is applied to this amount.</div>
                 <div class="error-text" id="errorBaseRate" aria-live="polite"></div>
               </div>
@@ -1112,7 +1106,7 @@
             <article class="card metric-card offer-card">
               <div class="offer-top">
                 <span class="offer-overline">Rate estimate</span>
-                <span class="offer-label"><span aria-hidden="true">$</span> per sponsored post</span>
+                <span class="offer-label">per sponsored post</span>
               </div>
               <div class="offer-value" id="offerValue" aria-live="polite">—</div>
               <div class="offer-foot">
@@ -1263,16 +1257,19 @@
             notation: "compact",
             maximumFractionDigits: 1,
           }).format(value);
-        const money = (value) =>
-          new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
+        
+        const money = (value, symbol = "₹") => {
+          const formatted = new Intl.NumberFormat("en-US", {
             maximumFractionDigits: 0,
           }).format(value);
+          return `${symbol}${formatted}`;
+        };
+
         const engagementRate = (snapshot) =>
           snapshot.followers > 0
             ? ((snapshot.avgLikes + snapshot.avgComments) / snapshot.followers) * 100
             : 0;
+            
         const currentSnapshot = () => ({
           creatorName: getElement("creatorName").value.trim(),
           handle: getElement("handle").value.trim().replace(/^@/, ""),
@@ -1281,6 +1278,7 @@
           avgLikes: numberFrom("avgLikes"),
           avgComments: numberFrom("avgComments"),
           baseRate: numberFrom("baseRate"),
+          currency: getElement("currencySelect") ? getElement("currencySelect").value : "₹"
         });
         const multiplierFor = (niche) => MULTIPLIERS[niche] ?? 1;
 
@@ -1369,7 +1367,7 @@
           const offerLabel = data.baseRate > 0
             ? `Estimated sponsored-post offer · ${multiplier}× niche factor`
             : "Sponsored-post rate · baseline not set";
-          const offerValue = data.baseRate > 0 ? money(offer) : "On request";
+          const offerValue = data.baseRate > 0 ? money(offer, data.currency) : "On request";
           content.innerHTML = `
             <div class="report-person">${escapeHtml(data.creatorName)}</div>
             <div class="report-handle">@${escapeHtml(data.handle)} · ${escapeHtml(data.niche)}</div>
@@ -1395,9 +1393,9 @@
             hasProfile ? compact(data.avgLikes + data.avgComments) : "—";
           getElement("followersValue").textContent =
             hasProfile ? compact(data.followers) : "—";
-          getElement("offerValue").textContent = hasRate ? money(offer) : "—";
+          getElement("offerValue").textContent = hasRate ? money(offer, data.currency) : "—";
           getElement("offerDetail").textContent = hasRate
-            ? `Baseline ${money(data.baseRate)} × ${data.niche}`
+            ? `Baseline ${money(data.baseRate, data.currency)} × ${data.niche}`
             : "Add a baseline rate to estimate";
           getElement("multiplierValue").textContent =
             `${multiplier}× niche factor`;
@@ -1438,7 +1436,7 @@
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 </button>
                 <button class="icon-button delete" type="button" title="Delete snapshot" aria-label="Delete ${escapeHtml(snapshot.creatorName)} snapshot" data-action="delete" data-id="${escapeHtml(snapshot.id)}">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" /></svg>
                 </button>
               </div>
             </article>`).join("");
@@ -1569,6 +1567,9 @@
           getElement("avgLikes").value = String(snapshot.avgLikes);
           getElement("avgComments").value = String(snapshot.avgComments);
           getElement("baseRate").value = String(snapshot.baseRate);
+          if(getElement("currencySelect") && snapshot.currency) {
+            getElement("currencySelect").value = snapshot.currency;
+          }
           saveFeedback.textContent = `Loaded ${snapshot.creatorName} into the snapshot form.`;
           renderLiveMetrics();
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1625,7 +1626,7 @@
           renderChart();
         });
 
-        /* --- UPDATED DYNAMIC TEMPLATE PITCH GENERATOR ENGINE --- */
+        /* --- DYNAMIC TEMPLATE ENGINE WITH CURRENCY SUPPORT --- */
         getElement("generatePitch").addEventListener("click", () => {
           const data = currentSnapshot();
           if (!data.creatorName || !data.handle || data.followers <= 0) {
@@ -1640,7 +1641,7 @@
           const campaign = getElement("campaign").value.trim();
           const rate = engagementRate(data);
           const multiplier = multiplierFor(data.niche);
-          const estimatedOffer = data.baseRate > 0 ? money(data.baseRate * multiplier) : "competitive rates";
+          const estimatedOffer = data.baseRate > 0 ? money(data.baseRate * multiplier, data.currency) : "competitive rates";
 
           const templates = [
             `Subject: Partnership Proposal: ${data.creatorName} x ${brand}\n\nHi ${brand} Team,\n\nI’ve been following ${brand} and love what you're building! I am ${data.creatorName} (@${data.handle}), a content creator in the ${data.niche} space.\n\nMy channel currently reaches ${compact(data.followers)} followers with an active engagement rate of ${rate.toFixed(2)}% (${compact(data.avgLikes)} avg likes per post). My audience deeply trusts my recommendations.\n\n${campaign ? `For your upcoming campaign ("${campaign}"),` : 'For a potential collaboration,'} I have drafted a custom Reel concept that naturally integrates your product.\n\nEstimated collaboration rate: ${estimatedOffer}. Let's connect for 5 minutes this week!\n\nBest regards,\n${data.creatorName}`,
