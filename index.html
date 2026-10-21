@@ -345,6 +345,30 @@
         margin-top: 19px;
       }
 
+      .pitch-type-selector {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .pitch-type-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #373846;
+        background: #191a24;
+        color: #a49acb;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 150ms ease;
+      }
+
+      .pitch-type-btn.active {
+        background: #322b54;
+        border-color: #8c75ff;
+        color: #fff;
+        font-weight: 600;
+      }
+
       .button {
         min-height: 39px;
         display: inline-flex;
@@ -828,8 +852,24 @@
         white-space: nowrap;
       }
 
+      .report-watermark {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 16px;
+        padding-top: 10px;
+        border-top: 1px dashed rgb(255 255 255 / 10%);
+        color: #727188;
+        font-size: 8px;
+      }
+
+      .report-watermark span {
+        color: #a399e6;
+        font-weight: 600;
+      }
+
       .report-note {
-        margin-top: 14px;
+        margin-top: 8px;
         color: #888698;
         font-size: 8px;
         line-height: 1.5;
@@ -1155,6 +1195,12 @@
             </div>
             <span class="section-number">02 / WRITE</span>
           </div>
+
+          <div class="pitch-type-selector">
+            <button class="pitch-type-btn active" type="button" data-type="email">Email Pitch</button>
+            <button class="pitch-type-btn" type="button" data-type="dm">Instagram DM Pitch</button>
+          </div>
+
           <div class="field">
             <label for="brandName">Brand name <span class="optional">· optional</span></label>
             <input id="brandName" placeholder="e.g. Northstar Skincare" />
@@ -1202,6 +1248,10 @@
             <div id="reportContent">
               <p style="margin:19px 0 5px;color:#aaa8b8;font-size:11px;line-height:1.6">Your report card will fill in when you add a creator name and follower count.</p>
             </div>
+            <div class="report-watermark">
+              <span>Generated via Insta Tracker</span>
+              <span>instatracker.app</span>
+            </div>
             <div class="report-note">Estimate uses your stated baseline rate and published niche multiplier. For planning only.</div>
           </div>
 
@@ -1238,6 +1288,7 @@
         const saveFeedback = document.getElementById("saveFeedback");
         let snapshots = [];
         let selectedChartHandle = "";
+        let selectedPitchType = "email";
 
         const getElement = (id) => document.getElementById(id);
         const numberFrom = (id) => {
@@ -1626,7 +1677,16 @@
           renderChart();
         });
 
-        /* --- DYNAMIC TEMPLATE ENGINE WITH CURRENCY SUPPORT --- */
+        // Pitch Mode Selection (Email vs DM)
+        document.querySelectorAll(".pitch-type-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            document.querySelectorAll(".pitch-type-btn").forEach((b) => b.classList.remove("active"));
+            e.target.classList.add("active");
+            selectedPitchType = e.target.dataset.type;
+          });
+        });
+
+        /* --- DYNAMIC TEMPLATE ENGINE WITH EMAIL/DM SUPPORT --- */
         getElement("generatePitch").addEventListener("click", () => {
           const data = currentSnapshot();
           if (!data.creatorName || !data.handle || data.followers <= 0) {
@@ -1643,18 +1703,28 @@
           const multiplier = multiplierFor(data.niche);
           const estimatedOffer = data.baseRate > 0 ? money(data.baseRate * multiplier, data.currency) : "competitive rates";
 
-          const templates = [
-            `Subject: Partnership Proposal: ${data.creatorName} x ${brand}\n\nHi ${brand} Team,\n\nI’ve been following ${brand} and love what you're building! I am ${data.creatorName} (@${data.handle}), a content creator in the ${data.niche} space.\n\nMy channel currently reaches ${compact(data.followers)} followers with an active engagement rate of ${rate.toFixed(2)}% (${compact(data.avgLikes)} avg likes per post). My audience deeply trusts my recommendations.\n\n${campaign ? `For your upcoming campaign ("${campaign}"),` : 'For a potential collaboration,'} I have drafted a custom Reel concept that naturally integrates your product.\n\nEstimated collaboration rate: ${estimatedOffer}. Let's connect for 5 minutes this week!\n\nBest regards,\n${data.creatorName}`,
+          let selectedDraft = "";
 
-            `Subject: Creator Collaboration: ${data.creatorName} for ${brand}\n\nHello ${brand} Marketing,\n\nAre you looking to scale your creator strategy in the ${data.niche} segment? \n\nI'm ${data.creatorName} (@${data.handle}). My community consists of ${compact(data.followers)} engaged followers, averaging ${rate.toFixed(2)}% engagement per post.\n\n${campaign ? `I would love to help drive visibility for ${campaign} using high-converting video content.` : 'I’d love to showcase your brand to my loyal audience.'}\n\nMy baseline rate for this scope is ${estimatedOffer}. Let me know if you'd like to review my full media kit.\n\nCheers,\n${data.creatorName}`
-          ];
+          if (selectedPitchType === "email") {
+            const emailTemplates = [
+              `Subject: Partnership Proposal: ${data.creatorName} x ${brand}\n\nHi ${brand} Team,\n\nI’ve been following ${brand} and love what you're building! I am ${data.creatorName} (@${data.handle}), a content creator in the ${data.niche} space.\n\nMy channel currently reaches ${compact(data.followers)} followers with an active engagement rate of ${rate.toFixed(2)}% (${compact(data.avgLikes)} avg likes per post).\n\n${campaign ? `For your upcoming campaign ("${campaign}"),` : 'For a potential collaboration,'} I have drafted a custom Reel concept that naturally integrates your product.\n\nEstimated collaboration rate: ${estimatedOffer}. Let's connect for 5 minutes this week!\n\nBest regards,\n${data.creatorName}`,
 
-          const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+              `Subject: Creator Collaboration: ${data.creatorName} for ${brand}\n\nHello ${brand} Marketing,\n\nAre you looking to scale your creator strategy in the ${data.niche} segment? \n\nI'm ${data.creatorName} (@${data.handle}). My community consists of ${compact(data.followers)} engaged followers, averaging ${rate.toFixed(2)}% engagement per post.\n\n${campaign ? `I would love to help drive visibility for ${campaign} using high-converting video content.` : 'I’d love to showcase your brand to my loyal audience.'}\n\nMy baseline rate for this scope is ${estimatedOffer}. Let me know if you'd like to review my full media kit.\n\nCheers,\n${data.creatorName}`
+            ];
+            selectedDraft = emailTemplates[Math.floor(Math.random() * emailTemplates.length)];
+          } else {
+            const dmTemplates = [
+              `Hey ${brand} team! 👋 Love your products. I'm ${data.creatorName} (@${data.handle}) in the ${data.niche} niche (${compact(data.followers)} followers, ${rate.toFixed(2)}% engagement).\n\n${campaign ? `Would love to collaborate for ${campaign}.` : 'I have a great content idea for your brand!'}\n\nMy estimated post rate is ${estimatedOffer}. Who is the best person on your marketing team to send a pitch deck to? 🚀`,
 
-          getElement("pitchDraft").value = randomTemplate;
+              `Hi ${brand}! I create content in ${data.niche} (@${data.handle}) with over ${compact(data.followers)} active followers and a ${rate.toFixed(2)}% engagement rate.\n\n${campaign ? `I'd love to partner up for ${campaign}.` : 'Would love to feature you guys in my upcoming content.'} Let me know if you're accepting creator proposals right now! 🙌`
+            ];
+            selectedDraft = dmTemplates[Math.floor(Math.random() * dmTemplates.length)];
+          }
+
+          getElement("pitchDraft").value = selectedDraft;
           getElement("pitchOutput").hidden = false;
           getElement("copyPitch").hidden = false;
-          setFeedback(getElement("pitchFeedback"), "Dynamic pitch generated successfully! Edit if needed before copying.");
+          setFeedback(getElement("pitchFeedback"), `${selectedPitchType.toUpperCase()} pitch generated successfully! Edit if needed before copying.`);
         });
 
         getElement("copyPitch").addEventListener("click", async () => {
