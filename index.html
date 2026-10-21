@@ -1625,6 +1625,7 @@
           renderChart();
         });
 
+        /* --- UPDATED DYNAMIC TEMPLATE PITCH GENERATOR ENGINE --- */
         getElement("generatePitch").addEventListener("click", () => {
           const data = currentSnapshot();
           if (!data.creatorName || !data.handle || data.followers <= 0) {
@@ -1639,17 +1640,20 @@
           const campaign = getElement("campaign").value.trim();
           const rate = engagementRate(data);
           const multiplier = multiplierFor(data.niche);
-          const priceSentence = data.baseRate > 0
-            ? `Based on my ${data.niche} niche benchmark (${multiplier}×) and a baseline rate of ${money(data.baseRate)}, my estimated sponsored-post offer is ${money(data.baseRate * multiplier)}.`
-            : "My sponsored-post rates are available on request.";
-          const campaignSentence = campaign
-            ? `\n\nFor ${campaign}, I’d love to shape a concept that feels natural to my audience and supports your campaign goals.`
-            : "";
-          getElement("pitchDraft").value =
-            `Hi ${brand} team,\n\nI’m ${data.creatorName} (@${data.handle}), a ${data.niche.toLowerCase()} creator connecting with a community of ${compact(data.followers)} on Instagram. My recent average is ${compact(data.avgLikes)} likes and ${compact(data.avgComments)} comments per post, for an engagement rate of ${rate.toFixed(2)}%.\n\nI’d love to explore a sponsored post together. ${priceSentence}${campaignSentence}\n\nIf this feels like a fit, I’d be happy to talk through timing, creative direction, and deliverables.\n\nBest,\n${data.creatorName}`;
+          const estimatedOffer = data.baseRate > 0 ? money(data.baseRate * multiplier) : "competitive rates";
+
+          const templates = [
+            `Subject: Partnership Proposal: ${data.creatorName} x ${brand}\n\nHi ${brand} Team,\n\nI’ve been following ${brand} and love what you're building! I am ${data.creatorName} (@${data.handle}), a content creator in the ${data.niche} space.\n\nMy channel currently reaches ${compact(data.followers)} followers with an active engagement rate of ${rate.toFixed(2)}% (${compact(data.avgLikes)} avg likes per post). My audience deeply trusts my recommendations.\n\n${campaign ? `For your upcoming campaign ("${campaign}"),` : 'For a potential collaboration,'} I have drafted a custom Reel concept that naturally integrates your product.\n\nEstimated collaboration rate: ${estimatedOffer}. Let's connect for 5 minutes this week!\n\nBest regards,\n${data.creatorName}`,
+
+            `Subject: Creator Collaboration: ${data.creatorName} for ${brand}\n\nHello ${brand} Marketing,\n\nAre you looking to scale your creator strategy in the ${data.niche} segment? \n\nI'm ${data.creatorName} (@${data.handle}). My community consists of ${compact(data.followers)} engaged followers, averaging ${rate.toFixed(2)}% engagement per post.\n\n${campaign ? `I would love to help drive visibility for ${campaign} using high-converting video content.` : 'I’d love to showcase your brand to my loyal audience.'}\n\nMy baseline rate for this scope is ${estimatedOffer}. Let me know if you'd like to review my full media kit.\n\nCheers,\n${data.creatorName}`
+          ];
+
+          const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+
+          getElement("pitchDraft").value = randomTemplate;
           getElement("pitchOutput").hidden = false;
           getElement("copyPitch").hidden = false;
-          setFeedback(getElement("pitchFeedback"), "Draft ready. Make any edits before copying.");
+          setFeedback(getElement("pitchFeedback"), "Dynamic pitch generated successfully! Edit if needed before copying.");
         });
 
         getElement("copyPitch").addEventListener("click", async () => {
